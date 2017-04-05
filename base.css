@@ -1,24 +1,40 @@
-.elBefore {
+* {
     display: flex;
-    flex-basis: 150px;
-    min-width: 50px;
-    background: #49544B;
-}
-.elAfter {
-    display: flex;
-    flex-basis: 150px;
-    background: #48536B;
 }
 .htmlSplitter {
-    display: flex;
     flex-shrink: 0;
     background: red;
 }
-.containerDiv {
+.rootElement {
   display: flex;
   /*flex-direction: column;*/
   margin: 50px;
   width: 300px;
   height: 100px;
   background: rgba(255, 0, 255, 0.5);
+}
+.verticalTestDivBefore {
+    flex-basis: 150px;
+    min-width: 50px;
+    background: #49544B;
+}
+.verticalTestDivAfter {
+    display: flex;
+    flex-basis: 150px;
+    background: #48536B;
+}
+.horizontalTestContainer {
+    flex-direction: column;
+}
+.horizontalTestDivBefore {
+    flex-basis: 150px;
+    min-height: 70px;
+    background: #69644B;
+}
+.horizontalTestDivAfter {
+    display: flex;
+    min-height: 30px;
+    min-width: 30px;
+    flex-basis: 150px;
+    background: #68636B;
 }

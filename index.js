@@ -36,12 +36,26 @@ const htmlSplitter = React.createClass({
         const siblingNodeBefore = thisNode.previousSibling;
         const siblingNodeAfter = thisNode.nextSibling;
         const boundaries = parentNode.getBoundingClientRect();
+        const borderPos = props.orient === 'vertical' ? boundaries.left : boundaries.top;
         const maxSize = props.orient === 'vertical' ? boundaries.width : boundaries.height;
+        const limitProp = props.orient === 'vertical' ? 'min-width' : 'min-height';
+        const sizeProp = 'flex-basis';
+        let primaryNode = null;
+        let secondaryNode = null;
 
+        siblingNodeBefore.computedStyle = getComputedStyle(siblingNodeBefore);
+        siblingNodeBefore.min = parseInt(siblingNodeBefore.computedStyle[limitProp]) || 0;
         siblingNodeBefore.hide = display(siblingNodeBefore, 'none');
         siblingNodeBefore.show = display(siblingNodeBefore, 'flex');
+        siblingNodeAfter.computedStyle = getComputedStyle(siblingNodeAfter);
+        siblingNodeAfter.min = parseInt(siblingNodeAfter.computedStyle[limitProp]) || 0;
         siblingNodeAfter.hide = display(siblingNodeAfter, 'none');
         siblingNodeAfter.show = display(siblingNodeAfter, 'flex');
+
+        if (props.collapse) {
+            primaryNode = props.collapse === 'before' ? siblingNodeBefore : siblingNodeAfter;
+            secondaryNode = props.collapse === 'before' ? siblingNodeAfter : siblingNodeBefore;
+        }
 
         thisNode.addEventListener('mousedown', setListeners);
         thisNode.addEventListener('dblclick', toggleCollapse);
@@ -59,51 +73,39 @@ const htmlSplitter = React.createClass({
             setTextSelection('auto');
         }
         function mouseMoveAction(e) {
-            const cssProps = {};
             const space = {};
             const mousePos = props.orient === 'vertical' ? e.clientX : e.clientY;
-            const borderPos = props.orient === 'vertical' ? boundaries.left : boundaries.top;
 
             space.before = mousePos - borderPos;
             space.after = maxSize - (mousePos - borderPos);
-            if (!collapse(space)) {
-                siblingNodeBefore.style['flex-basis'] = space.before + 'px';
-                siblingNodeAfter.style['flex-basis'] = space.after + 'px';
+            if (space.before > siblingNodeBefore.min && space.after > siblingNodeAfter.min) {
+                expandNode();
+                siblingNodeBefore.style[sizeProp] = space.before + 'px';
+                siblingNodeAfter.style[sizeProp] = space.after + 'px';
+            } else if (props.collapse && space[props.collapse] < primaryNode.min) {
+                collapseNode();
             }
         }
-        function collapse(space, force) {
-            if (!props.collapse) {
-                return false;
+        function collapseNode() {
+            if (primaryNode.hide()) {
+                secondaryNode.style[sizeProp] = maxSize + 'px';
             }
-            const primaryNode = props.collapse === 'before' ? siblingNodeBefore : siblingNodeAfter;
-            const secondaryNode = props.collapse === 'before' ? siblingNodeAfter : siblingNodeBefore;
-            const sizeProp = props.orient === 'vertical' ? 'width' : 'height';
-            const minSize = 50 /*Number(node.style['min-' + sizeProp])*/;
-            if (space[props.collapse] < minSize) {
-                primaryNode.hide() && (secondaryNode.style['flex-basis'] = maxSize + 'px');
-                return true;
-            } else {
-                primaryNode.show();
-                return false;
+        }
+        function expandNode() {
+            if (primaryNode.show()) {
+                secondaryNode.style[sizeProp] = (maxSize - parseInt(primaryNode.style[sizeProp]) || maxSize/2) + 'px';
             }
         }
         function toggleCollapse() {
-            if (siblingNodeBefore.style.display === 'none' || siblingNodeAfter.style.display === 'none') {
-                collapse({
-                    before: Number(siblingNodeBefore.style['flex-basis']) || maxSize / 2,
-                    after: Number(siblingNodeAfter.style['flex-basis']) || maxSize / 2
-                });
-            } else {
-                collapse({before: 0, after: 0});
-            }
+            primaryNode.style.display !== 'none' ? collapseNode() : expandNode();
         }
         function display(node, propValue) {
             return () => {
-                if (node.style.display === propValue) {
-                    return false;
-                }
-                node.style.display = propValue;
-                return true;
+               if (node.style.display === propValue) {
+                   return false;
+               }
+               node.style.display = propValue;
+               return true;
             };
         }
         function setTextSelection(value) {
@@ -118,22 +120,44 @@ var MainElement = React.createClass({
         return React.DOM.div({className: 'containerDiv'},
             React.DOM.div(
                 {
-                    className: 'elBefore'
+                    className: 'verticalTestDivBefore'
                 },
                 'asd asd'
             ),
             React.createElement(htmlSplitter,
                 {
-                    id: 's1',
-                    orient: 'vertical',
+                    // orient: 'vertical',
                     collapse: 'before'
                 }
             ),
             React.DOM.div(
                 {
-                    className: 'elAfter'
+                    className: 'verticalTestDivAfter'
                 },
                 null
+            ),
+            React.DOM.div(
+                {
+                    className: 'horizontalTestContainer'
+                },
+                React.DOM.div(
+                    {
+                        className: 'horizontalTestDivBefore'
+                    },
+                    'asd asdx'
+                ),
+                React.createElement(htmlSplitter,
+                    {
+                        orient: 'horizontal',
+                        collapse: 'before'
+                    }
+                ),
+                React.DOM.div(
+                    {
+                        className: 'horizontalTestDivAfter'
+                    },
+                    null
+                )
             )
         );
     }
